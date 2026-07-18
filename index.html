@@ -206,32 +206,18 @@ h1{font-size:2em;text-align:center;color:#e17055;margin-bottom:2px}
   <!-- TIP FORM -->
   <div class="info-card tip-form">
     <h3>📩 Send a Tip</h3>
-    <p style="color:#8a8a9a;margin-bottom:12px;">If you've seen Arabella or have any information — anywhere in Gulf Breeze, Navarre, Pensacola, or Santa Rosa County — submit here. It goes directly to the family.</p>
-    <input type="text" id="tipName" placeholder="Your name (optional)">
-    <input type="tel" id="tipContact" placeholder="Your phone or email (optional)">
-    <textarea id="tipMessage" rows="4" placeholder="Where did you see her? When? Any details help — clothing, direction of travel, vehicle, anything."></textarea>
-    <button onclick="submitTip()">📨 Send Tip Now</button>
-    <div id="tipStatus" style="margin-top:10px;color:#8a8a9a;"></div>
-    <p style="margin-top:12px;font-size:0.82em;color:#555;">📧 Or email: <strong>jitterydemand781@agentmail.to</strong></p>
+    <p style="color:#8a8a9a;margin-bottom:12px;">If you've seen Arabella or have any information — anywhere in Gulf Breeze, Navarre, Pensacola, or Santa Rosa County — submit here. It goes directly to the family and law enforcement.</p>
+    <form id="tipForm" onsubmit="return submitTip(event)">
+      <input type="text" id="tipName" placeholder="Your name (optional)">
+      <input type="tel" id="tipContact" placeholder="Your phone or email (optional)">
+      <textarea id="tipMessage" rows="4" placeholder="Where did you see her? When? Any details help — clothing, direction of travel, vehicle, anything." required></textarea>
+      <button type="submit" id="tipBtn">📨 Send Tip Now</button>
+      <div id="tipStatus" style="margin-top:10px;color:#8a8a9a;"></div>
+    </form>
+    <p style="margin-top:12px;font-size:0.82em;color:#555;">📧 Or copy this email: <strong onclick="navigator.clipboard.writeText('jitterydemand781@agentmail.to').then(()=>{this.textContent='✅ Copied!'})" style="cursor:pointer;border-bottom:1px dashed #555;">jitterydemand781@agentmail.to</strong> (click to copy)</p>
   </div>
 
-  <!-- AREA INFO -->
-  <div class="info-card">
-    <h3>🗺️ Search Areas</h3>
-    <p>If you are in or near any of these areas, please keep an eye out and share:</p>
-    <ul style="color:#c0c0d0;margin-top:8px;padding-left:18px;line-height:1.8;">
-      <li>Gulf Breeze (3308 Gulf Breeze Pkwy area)</li>
-      <li>Navarre Beach</li>
-      <li>Pensacola Beach</li>
-      <li>Santa Rosa County</li>
-      <li>Pensacola / Brent</li>
-      <li>Milton / Pace</li>
-      <li>Fort Walton Beach / Destin</li>
-      <li>All of Florida Panhandle</li>
-    </ul>
-  </div>
-
-  <div class="footer">
+<div class="footer">
     <p>Help us bring Bella home. Share this page everywhere.</p>
     <p style="margin-top:6px;">Santa Rosa County Sheriff: <a href="tel:+18509831100" style="color:#555;">850-983-1100</a> · Dispatch: <a href="tel:+18509831190" style="color:#555;">850-983-1190</a></p>
     <p style="margin-top:4px;font-size:0.75em;">Case #26-005399 · <a href="https://find-bella.vercel.app" style="color:#555;">find-bella.vercel.app</a></p>
@@ -243,7 +229,7 @@ h1{font-size:2em;text-align:center;color:#e17055;margin-bottom:2px}
 </div>
 
 <script>
-function submitTip(){
+function submitTip(e){ if(e) e.preventDefault();
   const msg=document.getElementById('tipMessage').value.trim();
   if(!msg){alert('Please describe what you saw — every detail helps.');return}
   const name=document.getElementById('tipName').value.trim();
