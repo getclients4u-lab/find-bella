@@ -212,6 +212,7 @@ h1{font-size:2em;text-align:center;color:#e17055;margin-bottom:2px}
     <textarea id="tipMessage" rows="4" placeholder="Where did you see her? When? Any details help — clothing, direction of travel, vehicle, anything."></textarea>
     <button onclick="submitTip()">📨 Send Tip Now</button>
     <div id="tipStatus" style="margin-top:10px;color:#8a8a9a;"></div>
+    <p style="margin-top:12px;font-size:0.82em;color:#555;">Or email: <strong>helpfulseat83@agentmail.to</strong></p>
   </div>
 
   <!-- AREA INFO -->
@@ -235,6 +236,10 @@ h1{font-size:2em;text-align:center;color:#e17055;margin-bottom:2px}
     <p style="margin-top:6px;">Santa Rosa County Sheriff: <a href="tel:+18509831100" style="color:#555;">850-983-1100</a> · Dispatch: <a href="tel:+18509831190" style="color:#555;">850-983-1190</a></p>
     <p style="margin-top:4px;font-size:0.75em;">Case #26-005399 · <a href="https://find-bella.vercel.app" style="color:#555;">find-bella.vercel.app</a></p>
   </div>
+
+<div style="text-align:center;padding:10px 20px;font-size:0.75em;">
+  <a href="admin.html" style="color:#333;">🔐 Tip Admin</a>
+</div>
 </div>
 
 <script>
@@ -243,11 +248,26 @@ function submitTip(){
   if(!msg){alert('Please describe what you saw — every detail helps.');return}
   const name=document.getElementById('tipName').value.trim();
   const contact=document.getElementById('tipContact').value.trim();
-  const full=`TIP RE: ARABELLA AMBAT - FROM ${name||'Anonymous'}${contact?' ('+contact+')':''}:\n${msg}`;
-  fetch('/api/leads.js',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name||'Missing Person Tip',phone:contact,message:full,email:'arabellatips@search.com'})}).catch(()=>{});
-  window.location.href=`mailto:hey.everlasting.memories@gmail.com?subject=TIP%3A%20Arabella%20Ambat%20Gulf%20Breeze&body=${encodeURIComponent(full)}`;
-  document.getElementById('tipStatus').textContent='✅ Tip sent. Thank you for helping bring Bella home.';
-  document.getElementById('tipMessage').value='';
+  const full=`Tip from ${name||'Anonymous'}${contact?' - Reply: '+contact:''}:\n${msg}`;
+  
+  const statusEl=document.getElementById('tipStatus');
+  statusEl.textContent='⏳ Sending...';
+  
+  fetch('/api/send-tip',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,contact,message:msg})})
+    .then(r=>r.json())
+    .then(d=>{
+      if(d.status==='ok'){
+        statusEl.textContent='✅ Tip sent securely. Thank you for helping bring Bella home.';
+        document.getElementById('tipMessage').value='';
+        document.getElementById('tipName').value='';
+        document.getElementById('tipContact').value='';
+      } else {
+        statusEl.textContent='❌ Send failed. Please email helpfulseat83@agentmail.to directly.';
+      }
+    })
+    .catch(()=>{
+      statusEl.textContent='❌ Network error. Please email helpfulseat83@agentmail.to directly.';
+    });
 }
 </script>
 </body>

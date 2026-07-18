@@ -5,9 +5,16 @@
     { "src": "*.{jpg,jpeg,png,gif,webp,svg,ico}", "use": "@vercel/static" },
     { "src": "*.css", "use": "@vercel/static" },
     { "src": "sitemap.xml", "use": "@vercel/static" },
-    { "src": "robots.txt", "use": "@vercel/static" }
+    { "src": "robots.txt", "use": "@vercel/static" },
+    { "src": "api/**/*.js", "use": "@vercel/node" }
   ],
   "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1" },
     { "src": "/(.*)", "dest": "/$1" }
-  ]
+  ],
+  "env": {
+    "AGENTMAIL_API_KEY": "@agentmail-api-key",
+    "BELLA_INBOX_ID": "helpfulseat83@agentmail.to",
+    "BELLA_ADMIN_TOKEN": "find-bella-2026"
+  }
 }
