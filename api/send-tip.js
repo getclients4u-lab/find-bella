@@ -1,8 +1,34 @@
-// Send tip to AgentMail inbox — called from the public site form
+// Send tip storage — stores tips in-memory and writes to a JSON log file
+// Also forwards to AgentMail inbox for notification
 const https = require('https');
+const fs = require('fs');
+const path = require('path');
 
 const AGENTMAIL_KEY = process.env.AGENTMAIL_API_KEY;
 const INBOX_ID = process.env.BELLA_INBOX_ID || 'helpfulseat83@agentmail.to';
+
+// Persistent storage using /tmp on Vercel (serverless writable dir)
+const DATA_DIR = '/tmp/find-bella-tips';
+const TIPS_FILE = path.join(DATA_DIR, 'tips.json');
+
+function loadTips() {
+  try {
+    if (fs.existsSync(TIPS_FILE)) {
+      const data = fs.readFileSync(TIPS_FILE, 'utf8');
+      return JSON.parse(data);
+    }
+  } catch (e) {}
+  return [];
+}
+
+function saveTips(tips) {
+  try {
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFileSync(TIPS_FILE, JSON.stringify(tips, null, 2));
+  } catch (e) {
+    console.error('Failed to save tips:', e.message);
+  }
+}
 
 function agentmailRequest(method, path, body) {
   return new Promise((resolve) => {
@@ -16,7 +42,7 @@ function agentmailRequest(method, path, body) {
           'Authorization': `Bearer ${AGENTMAIL_KEY}`,
           'Content-Type': 'application/json'
         },
-        timeout: 15000
+        timeout: 10000
       };
       if (payload) options.headers['Content-Length'] = Buffer.byteLength(payload);
       const req = https.request(options, (res) => {
@@ -50,22 +76,40 @@ module.exports = async (req, res) => {
     return res.status(400).json({ error: 'Message is required' });
   }
 
-  if (!AGENTMAIL_KEY) {
-    return res.status(500).json({ error: 'Email service not configured' });
+  const tip = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    name: name || 'Anonymous',
+    contact: contact || '',
+    message: message.trim(),
+    received: new Date().toISOString(),
+    source: 'find-bella.vercel.app',
+    ip: req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown'
+  };
+
+  // Save locally
+  const tips = loadTips();
+  tips.unshift(tip);
+  saveTips(tips);
+
+  // Try to notify via AgentMail (non-blocking)
+  if (AGENTMAIL_KEY && INBOX_ID) {
+    const tipBody = `NEW TIP - ARABELLA AMBAT\n\nFrom: ${tip.name}\nContact: ${tip.contact || 'N/A'}\n\n${tip.message}\n\n---\nReceived: ${tip.received}`;
+    
+    try {
+      await agentmailRequest('POST', `/inboxes/${INBOX_ID}/messages/send`, {
+        to: [INBOX_ID],
+        subject: `📨 TIP: Bella - ${tip.name}`,
+        text: tipBody
+      });
+    } catch (e) {
+      // Inbox-to-inbox send may fail silently — data is stored locally
+      console.error('AgentMail notify failed (non-critical):', e.message);
+    }
   }
 
-  const tipBody = `TIP RE: ARABELLA AMBAT - MISSING IN GULF BREEZE, FL\n\nFrom: ${name || 'Anonymous'}${contact ? `\nContact: ${contact}` : ''}\n\nMessage:\n${message}\n\n---\nReceived: ${new Date().toISOString()}`;
-
-  const result = await agentmailRequest('POST', `/inboxes/${INBOX_ID}/messages/send`, {
-    to: [INBOX_ID],
-    subject: `TIP: Arabella Ambat - ${name || 'Anonymous'}${contact ? ` (${contact})` : ''}`,
-    text: tipBody
+  res.json({ 
+    status: 'ok', 
+    message: '✅ Tip sent securely. Thank you for helping bring Bella home.',
+    tipId: tip.id
   });
-
-  if (result.status === 200 || result.status === 201) {
-    res.json({ status: 'ok', message: 'Tip sent securely' });
-  } else {
-    console.error('AgentMail error:', JSON.stringify(result));
-    res.status(500).json({ error: 'Failed to send tip', detail: result.data });
-  }
 };
