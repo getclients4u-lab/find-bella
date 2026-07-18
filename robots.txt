@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://find-bella.vercel.app/sitemap.xml
