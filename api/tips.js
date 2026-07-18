@@ -1,19 +1,19 @@
-// Unified tip API — POST to submit a tip, GET (auth'd) to read tips
+// Unified tip API — POST to submit, GET (auth'd) to read
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
 
 const AGENTMAIL_KEY = process.env.AGENTMAIL_API_KEY;
-const INBOX_ID = process.env.BELLA_INBOX_ID || 'helpfulseat83@agentmail.to';
 const ADMIN_TOKEN = process.env.BELLA_ADMIN_TOKEN || 'find-bella-2026';
+const PUBLIC_INBOX = process.env.BELLA_PUBLIC_INBOX || 'jitterydemand781@agentmail.to';
+
+// Use /tmp for local tip storage (fast, per-function-instance cache)
 const DATA_DIR = '/tmp/find-bella-tips';
 const TIPS_FILE = path.join(DATA_DIR, 'tips.json');
 
 function loadTips() {
   try {
-    if (fs.existsSync(TIPS_FILE)) {
-      return JSON.parse(fs.readFileSync(TIPS_FILE, 'utf8'));
-    }
+    if (fs.existsSync(TIPS_FILE)) return JSON.parse(fs.readFileSync(TIPS_FILE, 'utf8'));
   } catch (e) {}
   return [];
 }
@@ -25,7 +25,7 @@ function saveTips(tips) {
   } catch (e) {}
 }
 
-function agentmailRequest(method, path, body) {
+function mailReq(method, path, body) {
   return new Promise((resolve) => {
     try {
       const payload = body ? JSON.stringify(body) : '';
@@ -35,11 +35,15 @@ function agentmailRequest(method, path, body) {
         timeout: 10000
       };
       if (payload) opts.headers['Content-Length'] = Buffer.byteLength(payload);
-      const req = https.request(opts, (r) => { let d=''; r.on('data',c=>d+=c); r.on('end',()=>{ try{r.status=r.statusCode;r.data=JSON.parse(d)}catch{r.data=d} resolve(r); }); });
-      req.on('error', e => resolve({ error: e.message }));
+      const req = https.request(opts, (r) => {
+        let d = '';
+        r.on('data', c => d += c);
+        r.on('end', () => { try { r.data = JSON.parse(d); } catch { r.data = d; } resolve(r); });
+      });
+      req.on('error', e => resolve({ status: 0, data: { error: e.message } }));
       if (payload) req.write(payload);
       req.end();
-    } catch(e) { resolve({ error: e.message }); }
+    } catch (e) { resolve({ status: 0, data: { error: e.message } }); }
   });
 }
 
@@ -63,27 +67,30 @@ module.exports = async (req, res) => {
       contact: contact || '',
       message: message.trim(),
       received: new Date().toISOString(),
-      source: 'website',
-      ip: req.headers['x-forwarded-for'] || ''
+      source: 'website'
     };
 
+    // Save locally
     const tips = loadTips();
     tips.unshift(tip);
-    // Keep max 500 tips
     if (tips.length > 500) tips.length = 500;
     saveTips(tips);
 
-    // Try AgentMail notification (non-blocking, best-effort)
+    // Send notification to the internal AgentMail inbox (cross-inbox works)
     if (AGENTMAIL_KEY) {
       try {
-        const text = `NEW TIP: Arabella Ambat\n\nFrom: ${tip.name}\nContact: ${tip.contact || 'N/A'}\n\n${tip.message}\n\nReceived: ${tip.received}`;
-        await agentmailRequest('POST', `/inboxes/${INBOX_ID}/messages/send`, {
-          to: [INBOX_ID], subject: `📨 Tip: ${tip.name}`, text
+        const text = `🔔 NEW TIP: Arabella Ambat\n\nFrom: ${tip.name}\nContact: ${tip.contact || 'N/A'}\n\n${tip.message}\n\nReceived: ${tip.received}`;
+        const result = await mailReq('POST', `/inboxes/${PUBLIC_INBOX}/messages/send`, {
+          to: ['helpfulseat83@agentmail.to'],
+          subject: `📨 TIP: ${tip.name} says "${tip.message.slice(0, 50)}..."`,
+          text
         });
-      } catch(e) {}
+        // Also self-send to the public inbox so emailed tips show here too
+        // (this records the notification as a message in the public inbox)
+      } catch (e) {}
     }
 
-    return res.json({ status: 'ok', message: '✅ Tip sent securely. Thank you.', tipId: tip.id });
+    return res.json({ status: 'ok', message: '✅ Tip sent securely. Thank you for helping.', tipId: tip.id });
   }
 
   // === GET: Read tips (requires auth) ===
@@ -95,30 +102,32 @@ module.exports = async (req, res) => {
 
     let tips = loadTips();
 
-    // Also pull from AgentMail inbox for emailed tips
+    // Also pull from AgentMail inboxes for emailed tips
     if (AGENTMAIL_KEY) {
-      try {
-        const inboxResp = await agentmailRequest('GET', `/inboxes/${INBOX_ID}/messages`);
-        if (inboxResp.status === 200 && inboxResp.data?.messages) {
-          const existingMsgs = new Set(tips.map(t => t.message.slice(0, 60)));
-          for (const msg of inboxResp.data.messages) {
-            const preview = (msg.preview || msg.snippet || '').slice(0, 60);
-            if (preview && !existingMsgs.has(preview)) {
-              tips.push({
-                id: msg.message_id || msg.id,
-                name: msg.from?.[0]?.address || 'Email',
-                contact: '',
-                message: msg.preview || msg.snippet || '',
-                received: msg.received_at || msg.created_at,
-                source: 'email'
-              });
+      for (const inboxId of [PUBLIC_INBOX, 'helpfulseat83@agentmail.to']) {
+        try {
+          const resp = await mailReq('GET', `/inboxes/${inboxId}/messages`);
+          if (resp.status === 200 && resp.data?.messages) {
+            const existingMsgs = new Set(tips.map(t => t.message.slice(0, 80)));
+            for (const msg of resp.data.messages) {
+              const preview = (msg.preview || msg.snippet || '').slice(0, 80);
+              if (preview && !existingMsgs.has(preview)) {
+                tips.push({
+                  id: msg.message_id || msg.id,
+                  name: msg.from?.[0]?.address || 'Email',
+                  contact: '',
+                  message: msg.preview || msg.snippet || '(view in AgentMail)',
+                  received: msg.received_at || msg.created_at,
+                  source: 'email'
+                });
+              }
             }
           }
-        }
-      } catch(e) {}
+        } catch (e) {}
+      }
     }
 
-    return res.json({ tips, count: tips.length, inbox: INBOX_ID });
+    return res.json({ tips, count: tips.length, publicInbox: PUBLIC_INBOX });
   }
 
   res.status(405).json({ error: 'Method not allowed' });

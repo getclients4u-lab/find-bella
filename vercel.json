@@ -35,5 +35,10 @@
       "src": "/(.*)",
       "dest": "/$1"
     }
-  ]
+  ],
+  "env": {
+    "BELLA_INBOX_ID": "helpfulseat83@agentmail.to",
+    "BELLA_PUBLIC_INBOX": "jitterydemand781@agentmail.to",
+    "BELLA_ADMIN_TOKEN": "find-bella-2026"
+  }
 }
