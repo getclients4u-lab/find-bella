@@ -253,7 +253,7 @@ function submitTip(){
   const statusEl=document.getElementById('tipStatus');
   statusEl.textContent='⏳ Sending...';
   
-  fetch('/api/send-tip',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,contact,message:msg})})
+  fetch('/api/tips.js',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,contact,message:msg})})
     .then(r=>r.json())
     .then(d=>{
       if(d.status==='ok'){
