@@ -69,13 +69,12 @@ tr:hover{background:rgba(212,168,75,0.05)}
           <tr>
             <th>#</th>
             <th>Date / Time</th>
-            <th>From</th>
-            <th>Message</th>
-            <th>Tip Content</th>
+            <th>From / Contact</th>
+            <th colspan="2">Message</th>
           </tr>
         </thead>
         <tbody id="tipsBody">
-          <tr><td colspan="5" class="empty">🔒 Log in to view tips</td></tr>
+          <tr><td colspan="4" class="empty">🔒 Log in to view tips</td></tr>
         </tbody>
       </table>
     </div>
@@ -140,32 +139,25 @@ function renderTips() {
   const tbody = document.getElementById('tipsBody');
   
   if (tipsData.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" class="empty">📭 No tips received yet</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" class="empty">📭 No tips received yet</td></tr>';
     return;
   }
   
   tbody.innerHTML = tipsData.map((tip, i) => {
     const time = tip.received ? new Date(tip.received).toLocaleString() : '—';
-    const body = tip.body || tip.preview || '—';
-    const from = tip.from || 'Anonymous';
+    const msg = tip.message || tip.body || tip.preview || '—';
+    const from = tip.name || tip.from || 'Anonymous';
+    const contact = tip.contact || '';
     
     return `<tr>
       <td>${tipsData.length - i}</td>
       <td class="time">${time}</td>
-      <td>${escapeHtml(from)}</td>
-      <td class="tip-body">${escapeHtml(body.slice(0, 500))}</td>
-      <td class="tip-body">${extractTipContent(body)}</td>
+      <td>${escapeHtml(from)}${contact ? '<br><span style="color:#8a8a9a;font-size:0.8em;">' + escapeHtml(contact) + '</span>' : ''}</td>
+      <td class="tip-body" colspan="2">${escapeHtml(msg)}</td>
     </tr>`;
   }).join('');
 }
 
-function extractTipContent(text) {
-  // Extract what looks like the actual tip message
-  const lines = text.split('\n').filter(l => l.trim());
-  // Skip header lines like "TIP RE: ARABELLA..."
-  const tipLines = lines.filter(l => !l.startsWith('TIP RE:') && !l.startsWith('TIP FROM'));
-  return escapeHtml(tipLines.join('\n').slice(0, 300));
-}
 
 function escapeHtml(text) {
   const div = document.createElement('div');
