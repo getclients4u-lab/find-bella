@@ -24,10 +24,6 @@
     {
       "src": "api/**/*.js",
       "use": "@vercel/node"
-    },
-    {
-      "src": "api/test-env.js",
-      "use": "@vercel/node"
     }
   ],
   "routes": [
