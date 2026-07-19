@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flyer — Find Bella | Print & Share</title>
+<meta name="robots" content="index, follow">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f0f0f0;color:#222;min-height:100vh}
+.header{background:#e17055;color:white;text-align:center;padding:14px;font-size:1.1em;font-weight:700}
+.container{max-width:600px;margin:0 auto;padding:20px}
+h1{text-align:center;color:#e17055;margin-bottom:4px}
+.sub{text-align:center;color:#666;margin-bottom:20px}
+
+.flyer-card{background:white;border-radius:14px;padding:24px;margin-bottom:16px;box-shadow:0 4px 20px rgba(0,0,0,0.1);border:2px solid #e17055}
+.flyer-card h3{color:#e17055;font-size:1.1em;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.flyer-card .photo{width:180px;height:180px;background:#eee;border-radius:10px;margin:0 auto 14px;overflow:hidden;border:2px solid #e17055}
+.flyer-card .photo img{width:100%;height:100%;object-fit:cover}
+.flyer-card .info{font-size:1em;line-height:1.8}
+.flyer-card .info strong{color:#e17055}
+.flyer-card .phone{font-size:1.6em;font-weight:700;color:#e17055;text-align:center;margin:12px 0}
+.flyer-card .case{text-align:center;color:#888;font-size:0.85em}
+.flyer-card .link{text-align:center;margin:10px 0;color:#555}
+
+.download-btn{display:block;width:100%;padding:14px;background:#e17055;color:white;border:none;border-radius:8px;font-size:1.1em;font-weight:700;cursor:pointer;text-align:center;margin:10px 0}
+.download-btn:hover{background:#d06045}
+.share-btn{display:block;width:100%;padding:12px;background:#222;color:white;border:none;border-radius:8px;font-size:1em;font-weight:600;cursor:pointer;text-align:center;margin:10px 0}
+.share-btn:hover{background:#333}
+
+.format-btns{display:flex;gap:8px;margin-bottom:14px}
+.format-btn{flex:1;padding:10px;border-radius:8px;border:2px solid #ddd;background:white;font-weight:600;cursor:pointer;text-align:center}
+.format-btn.active{border-color:#e17055;background:#fff5f2}
+.format-btn:hover{border-color:#e17055}
+
+@media print{body{background:white}.header,.container>*:not(.flyer-card){display:none}.flyer-card{border:3px solid #e17055;box-shadow:none;page-break-after:avoid}}
+@media(max-width:500px){.flyer-card .info{font-size:0.92em}}
+</style>
+</head>
+<body>
+<div class="header">⚠️ PRINT or SHARE — Help Find Bella</div>
+<div class="container">
+  <h1>🖨️ Flyer Generator</h1>
+  <div class="sub">Download, print, or share — help spread the word in Gulf Breeze</div>
+
+  <div class="format-btns" id="formatBtns">
+    <div class="format-btn active" onclick="setFormat('letter')">📄 Letter (8.5x11)</div>
+    <div class="format-btn" onclick="setFormat('half')">📃 Half Sheet</div>
+    <div class="format-btn" onclick="setFormat('social')">📱 Social Square</div>
+  </div>
+
+  <div class="flyer-card" id="flyer">
+    <h3>⚠️ MISSING — FIND BELLA</h3>
+    <div class="photo"><img src="arabella1.jpg" alt="Arabella Ambat" id="flyerPhoto"></div>
+    <div class="info">
+      <strong>Name:</strong> Arabella "Bella" Ambat<br>
+      <strong>Height:</strong> 5'5" &nbsp; <strong>Weight:</strong> 135 lbs<br>
+      <strong>Last seen wearing:</strong> Sky blue shirt, white shorts<br>
+      <strong>Last seen:</strong> 3308 Gulf Breeze Pkwy, Gulf Breeze, FL<br>
+    </div>
+    <div class="phone">📞 850-983-1100</div>
+    <div class="case">Case #26-005399 · Santa Rosa County Sheriff · Deputy M. MacKenzie</div>
+    <div class="link">🔗 find-bella.vercel.app</div>
+  </div>
+
+  <button class="download-btn" onclick="window.print()">🖨️ Print This Flyer</button>
+  <button class="share-btn" onclick="shareFlyer()">📱 Share Flyer</button>
+
+  <div style="margin-top:20px;background:#f9f9f9;border-radius:10px;padding:16px;border:1px solid #ddd;">
+    <p style="color:#666;font-size:0.9em;text-align:center;">
+      💡 <strong>Tip:</strong> Print these and post at gas stations, grocery stores, churches, and community boards in Gulf Breeze, Navarre, and Pensacola.
+    </p>
+  </div>
+</div>
+
+<script>
+let currentFormat = 'letter';
+
+function setFormat(f) {
+  currentFormat = f;
+  document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  
+  const flyer = document.getElementById('flyer');
+  if (f === 'half') {
+    flyer.style.maxWidth = '400px';
+    flyer.style.margin = '0 auto';
+  } else if (f === 'social') {
+    flyer.style.maxWidth = '500px';
+    flyer.style.margin = '0 auto';
+  } else {
+    flyer.style.maxWidth = 'none';
+  }
+}
+
+function shareFlyer() {
+  const text = '🚨 MISSING — Arabella "Bella" Ambat in Gulf Breeze, FL. 5\'5", 135 lbs, sky blue shirt, white shorts. Last seen 3308 Gulf Breeze Pkwy. Call 850-983-1100 if seen. Case #26-005399. Photos & tips: find-bella.vercel.app';
+  
+  if (navigator.share) {
+    navigator.share({ title: 'Find Bella — Missing Person', text, url: 'https://find-bella.vercel.app' }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(text + ' https://find-bella.vercel.app').then(() => alert('✅ Flyer text copied! Paste it anywhere.'));
+  }
+}
+</script>
+</body>
+</html>
